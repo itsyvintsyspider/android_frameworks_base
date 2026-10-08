@@ -170,7 +170,8 @@ public class ScreenMediaRecorder {
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
         mMediaRecorder.setVideoEncodingProfileLevel(
                 MediaCodecInfo.CodecProfileLevel.AVCProfileHigh,
-                MediaCodecInfo.CodecProfileLevel.AVCLevel3);
+                getRequiredAvcLevel(videoParameters.mWidth, videoParameters.mHeight,
+                        videoParameters.mRefreshRate));
         mMediaRecorder.setVideoSize(videoParameters.mWidth, videoParameters.mHeight);
         mMediaRecorder.setVideoFrameRate(videoParameters.mRefreshRate);
         mMediaRecorder.setVideoEncodingBitRate(videoParameters.bitrate());
@@ -226,6 +227,32 @@ public class ScreenMediaRecorder {
      * @param refreshRate  Desired refresh rate
      * @return returns {@link VideoParameters} for the screen recording.
      */
+    // H.264 Annex A level limits
+    private static final int[][] AVC_LEVEL_LIMITS = {
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel3, 1620, 40500},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel31, 3600, 108000},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel32, 5120, 216000},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel4, 8192, 245760},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel42, 8704, 522240},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel5, 22080, 589824},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel51, 36864, 983040},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel52, 36864, 2073600},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel6, 139264, 4177920},
+            {MediaCodecInfo.CodecProfileLevel.AVCLevel62, 139264, 16711680},
+    };
+
+    // Lowest level covering this resolution
+    private int getRequiredAvcLevel(int width, int height, int frameRate) {
+        int macroblocks = ((width + 15) / 16) * ((height + 15) / 16);
+        int macroblocksPerSec = macroblocks * frameRate;
+        for (int[] limit : AVC_LEVEL_LIMITS) {
+            if (macroblocks <= limit[1] && macroblocksPerSec <= limit[2]) {
+                return limit[0];
+            }
+        }
+        return MediaCodecInfo.CodecProfileLevel.AVCLevel62;
+    }
+
     private VideoParameters getSupportedSize(final int screenWidth, final int screenHeight,
             int refreshRate)
             throws IOException {
