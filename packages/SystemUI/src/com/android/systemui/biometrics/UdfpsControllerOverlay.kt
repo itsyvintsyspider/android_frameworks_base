@@ -206,6 +206,7 @@ constructor(
                     (inflater.inflate(R.layout.udfps_touch_overlay, null, false)
                             as UdfpsTouchOverlay)
                         .apply {
+                            setUdfpsDisplayModeProvider(udfpsDisplayModeProvider)
                             // This view overlaps the sensor area
                             // prevent it from being selectable during a11y
                             if (requestReason.isImportantForAccessibility()) {
